@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Disable caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Xiaomi HyperOS Style Launcher</title>
+    <style>
+        :root {
+            --bg-start: #dee6ff;
+            --bg-end: #ebf0ff;
+            --card-color: #fff;
+            --btn-color: rgb(199 217 254 / 70%);
+            --btn-color-pressed: rgb(199 217 254 / 90%);
+            --accent-color: #007bff;
+            --text-color: #111;
+            --secondary-color: #555;
+            --radius: 16px;
+            --time-color: #000;
+            --date-color: #666;
+            --app-icon-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-start: #1d2129;
+                --bg-end: #181c23;
+                --card-color: #1f232c;
+                --btn-color: rgb(41 46 56 / 70%);
+                --btn-color-pressed: rgb(41 46 56 / 90%);
+                --accent-color: #00bcd4;
+                --text-color: #d4d4d4;
+                --secondary-color: #aaaaaa;
+                --radius: 16px;
+                --time-color: #fff;
+                --date-color: #ccc;
+                --app-icon-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        html {
+            background: var(--bg-end);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(50deg, var(--bg-start), var(--bg-end));
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 700px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .time-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+        }
+
+        .time {
+            font-size: 5rem;
+            font-weight: 300;
+            color: var(--time-color);
+            margin: 0;
+        }
+
+        .date {
+            font-size: 1.2rem;
+            color: var(--date-color);
+            margin-top: 0.5rem;
+        }
+
+        .dock {
+            background-color: var(--card-color);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 12px;
+            margin-bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+        }
+
+        .app-button {
+            background-color: var(--btn-color);
+            border: none;
+            border-radius: var(--radius);
+            padding: 13px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease-out;
+            transform: translateY(0) scale(1);
+            box-shadow: none;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .app-button.active {
+            background-color: var(--btn-color-pressed);
+            transform: scale(0.95);
+        }
+
+        .app-button:hover:not(.active) {
+            transform: scale(1.03);
+        }
+
+        .app-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+            transition: all 0.1s ease-out;
+            filter: drop-shadow(var(--app-icon-shadow));
+            object-fit: contain;
+        }
+
+        .app-button.active .app-icon {
+            transform: scale(0.95);
+        }
+
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+
+        .settings-overlay.active {
+            display: block;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 280px;
+            height: 100vh;
+            background-color: var(--card-color);
+            border-left: 1px solid #2a2f51;
+            padding: 24px 16px 100px 16px;
+            box-sizing: border-box;
+            transition: right 0.3s ease;
+            z-index: 102;
+            overflow-y: scroll;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .settings-panel label {
+            display: flex;
+            flex: 1;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            padding: 12px;
+            margin-right: 6px;
+            border-radius: var(--radius);
+            background-color: var(--btn-color);
+            cursor: pointer;
+            transition: all 0.1s ease-out;
+            user-select: none;
+        }
+
+        .settings-panel label:active {
+            background-color: var(--btn-color-pressed);
+            transform: scale(0.98);
+        }
+
+        .settings-panel input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-color);
+        }
+
+        .order-controls {
+            opacity: 0.6;
+            display: flex;
+            gap: 4px;
+        }
+
+        .order-controls button {
+            background: var(--btn-color);
+            border: none;
+            border-radius: 8px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s ease-out;
+            user-select: none;
+        }
+
+        .order-controls button:active {
+            background-color: var(--btn-color-pressed);
+            transform: scale(0.9);
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        .links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--btn-color);
+            color: var(--text-color);
+            font-size: 12px;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            transition: all 0.1s ease-out;
+            width: 100%;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .links a:active {
+            background-color: var(--btn-color-pressed);
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <div class="wrapper">
+        <div class="time-container" id="timeContainer">
+            <div class="time" id="time"></div>
+            <div class="date" id="date"></div>
+        </div>
+        <div class="dock" id="dock"></div>
+        <div class="settings-panel" id="settingsPanel"></div>
+        <div class="footer">
+            <div class="links">
+                <a href="#" class="xiaomi-club" onclick="toggleSettings(); return false;">Xiaomi Su7 | HiperOS</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Все приложения с исправленными deep links
+        const SERVICES = {
+            music: [
+                {
+                    id: 'yandex-music',
+                    name: 'Yandex Music',
+                    package: 'ru.yandex.music',
+                    scheme: 'yandexmusic',
+                    path: '',
+                    fallbackUrl: 'https://music.yandex.ru',
+                    icon: 'https://play-lh.googleusercontent.com/mfSdQmzaqOdlWlygbCuJqNC0TNOSbjdXOH9BN9MVyuYYp5p6VD54KOmRmgPVv2sXlkc=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'yandex-radio',
+                    name: 'Yandex Radio',
+                    package: 'ru.yandex.music',
+                    scheme: 'yandexmusic',
+                    path: 'radio/user/default?play=true',
+                    login: 'default', // Можно заменить на конкретный логин пользователя
+                    fallbackUrl: 'https://music.yandex.ru/radio',
+                    icon: 'https://yablyk.com/wp-content/uploads/2014/03/itunes-radio.jpg',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'youtube-music',
+                    name: 'YouTube Music',
+                    package: 'com.google.android.apps.youtube.music',
+                    scheme: 'vnd.youtube.music',
+                    path: '',
+                    fallbackUrl: 'https://music.youtube.com',
+                    icon: 'https://play-lh.googleusercontent.com/zD8UA5CRdiPzbvTwGKtzR4KjQpxqEK6X0tGDpzEaOo0xPEvG6HUiC_0qkpTfzpuMTqU=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'apple-music',
+                    name: 'Apple Music',
+                    package: 'com.apple.android.music',
+                    scheme: 'music',
+                    path: '',
+                    fallbackUrl: 'https://music.apple.com',
+                    icon: 'https://play-lh.googleusercontent.com/mOkjjo5Rzcpk7BsHrsLWnqVadUK1FlLd2-UlQvYkLL4E9A0LpyODNIQinXPfUMjUrbE=s64-rw',
+                },
+                {
+                    id: 'spotify',
+                    name: 'Spotify',
+                    package: 'com.spotify.music',
+                    scheme: 'spotify',
+                    path: '',
+                    fallbackUrl: 'https://open.spotify.com',
+                    icon: 'https://play-lh.googleusercontent.com/7ynvVIRdhJNAngCg_GI7i8TtH8BqkJYmffeUHsG-mJOdzt1XLvGmbsKuc5Q1SInBjDKN=s64-rw',
+                    showOnLaunch: true,
+                }
+            ],
+            navigation: [
+                {
+                    id: 'yandex-navi',
+                    name: 'Yandex Navi',
+                    package: 'ru.yandex.yandexnavi',
+                    scheme: 'yandexnavi',
+                    path: '',
+                    fallbackUrl: 'https://maps.yandex.ru',
+                    icon: 'https://play-lh.googleusercontent.com/quo2QK2mxipWCZiBTM58nyENopQsvXpLz1wqLOhlBg8TxJ8tEH_T9buZVdRnSDa-vPY=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'yandex-maps',
+                    name: 'Yandex Maps',
+                    package: 'ru.yandex.yandexmaps',
+                    scheme: 'yandexmaps',
+                    path: '',
+                    fallbackUrl: 'https://maps.yandex.ru',
+                    icon: 'https://play-lh.googleusercontent.com/DLCdDuCkVMI-vQhbNmPJU8cIDZulGHJxYGz_Cm9Mbrv6ssl9TW-RUMXfzczd9NKZj4w=s64-rw',
+                },
+                {
+                    id: 'google-maps',
+                    name: 'Google Maps',
+                    package: 'com.google.android.apps.maps',
+                    scheme: 'google.navigation',
+                    path: '',
+                    fallbackUrl: 'https://maps.google.com',
+                    icon: 'https://play-lh.googleusercontent.com/Kf8WTct65hFJxBUDm5E-EpYsiDoLQiGGbnuyP6HBNax43YShXti9THPon1YKB6zPYpA=s64-rw',
+                },
+                {
+                    id: '2gis',
+                    name: '2GIS',
+                    package: 'ru.dublgis.dgismobile',
+                    scheme: 'dgis',
+                    path: '',
+                    fallbackUrl: 'https://2gis.ru',
+                    icon: 'https://play-lh.googleusercontent.com/55huczUZ05ruaVynURUNqzgTu0qXLF-SPQZKtE9KA6_BavI-g0NgXz1NR98n5xX33HwD=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'waze',
+                    name: 'Waze',
+                    package: 'com.waze',
+                    scheme: 'waze',
+                    path: '',
+                    fallbackUrl: 'https://www.waze.com',
+                    icon: 'https://play-lh.googleusercontent.com/r7XL36PVNtnidqy6ikRiW1AHEIsjhePrZ8W5M4cNTQy5ViF3-lIDY47hpvxc84kJ7lw=s64-rw',
+                    showOnLaunch: true,
+                }
+            ],
+            communication: [
+                {
+                    id: 'zoom',
+                    name: 'Zoom',
+                    package: 'us.zoom.videomeetings',
+                    scheme: 'zoomus',
+                    path: '',
+                    fallbackUrl: 'https://zoom.us',
+                    icon: 'https://play-lh.googleusercontent.com/yZsmiNjmji3ZoOuLthoVvptLB9cZ0vCmitcky4OUXNcEFV3IEQkrBD2uu5kuWRF5_ERA=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'chatgpt',
+                    name: 'ChatGPT',
+                    package: 'com.openai.chatgpt',
+                    scheme: 'chatgpt',
+                    path: '',
+                    fallbackUrl: 'https://chat.openai.com',
+                    icon: 'https://play-lh.googleusercontent.com/lmG9HlI0awHie0cyBieWXeNjpyXvHPwDBb8MNOVIyp0P8VEh95AiBHtUZSDVR3HLe3A=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'deepseek',
+                    name: 'DeepSeek',
+                    package: 'com.deepseek.chat',
+                    scheme: 'deepseek',
+                    path: '',
+                    fallbackUrl: 'https://deepseek.com',
+                    icon: 'https://play-lh.googleusercontent.com/d2zqBFBEymSZKaVg_dRo1gh3hBFn7_Kl9rO74xkDmnJeLgDW0MoJD3cUx0QzZN6jdsg=s64-rw',
+                },
+                {
+                    id: 'alice',
+                    name: 'Alice',
+                    package: 'com.yandex.aliceapp',
+                    scheme: 'yandexalice',
+                    path: '',
+                    fallbackUrl: 'https://alice.yandex.ru',
+                    icon: 'https://play-lh.googleusercontent.com/EJpCCkNQrYAyD4NdTcWUe-RSdr1LGTz9ya6FQ1Q-H9RLRdhdg85_oHgHNrWxNiCVgcVD=w480-h960-rw',
+                    showOnLaunch: true,
+                }
+            ],
+            entertainment: [
+                {
+                    id: 'kinopub',
+                    name: 'Kinopub',
+                    package: 'com.kinopub',
+                    scheme: 'kinopub',
+                    path: '',
+                    fallbackUrl: 'https://kino.pub',
+                    icon: 'https://img.iconpusher.com/com.kinopub/1.33.png?w=64&q=75',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'kinopoisk',
+                    name: 'Kinopoisk',
+                    package: 'ru.kinopoisk',
+                    scheme: 'kinopoisk',
+                    path: '',
+                    fallbackUrl: 'https://hd.kinopoisk.ru',
+                    icon: 'https://play-lh.googleusercontent.com/5czw6iycA8YhjI653GQdwnnmu8NNzEMXV32gZKoVCYZV6PQUAv_YV0uJ2PU1E-Jm9PE=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'youtube',
+                    name: 'YouTube',
+                    package: 'com.google.android.youtube',
+                    scheme: 'vnd.youtube',
+                    path: '',
+                    fallbackUrl: 'https://m.youtube.com',
+                    icon: 'https://play-lh.googleusercontent.com/6am0i3walYwNLc08QOOhRJttQENNGkhlKajXSERf3JnPVRQczIyxw2w3DxeMRTOSdsY=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'tiktok',
+                    name: 'TikTok',
+                    package: 'com.zhiliaoapp.musically',
+                    scheme: 'tiktok',
+                    path: '',
+                    fallbackUrl: 'https://tiktok.com',
+                    icon: 'https://play-lh.googleusercontent.com/LdBITldj-tJxqLm-CsWSbnt4BMo2gk53cgM7mWIL-zn44m1ywLyQgxRsHKqp8r0qceXs=s64-rw',
+                    showOnLaunch: true,
+                },
+                {
+                    id: 'okko',
+                    name: 'Okko',
+                    package: 'ru.more.play',
+                    scheme: 'okko',
+                    path: '',
+                    fallbackUrl: 'https://okko.tv',
+                    icon: 'https://play-lh.googleusercontent.com/dz290mv8r8252ofL1c1g0fxpAAmCs4A5NQGOjksBU_QhWrDisG1gaT-ganjqNx1gGpk=s64-rw',
+                },
+                {
+                    id: 'ivi',
+                    name: 'ivi',
+                    package: 'ru.ivi.client',
+                    scheme: 'ivi',
+                    path: '',
+                    fallbackUrl: 'https://ivi.ru',
+                    icon: 'https://play-lh.googleusercontent.com/GKBFhzd6BuA_gx5z51INJ_shZxWh1rqbkUcDBIZURe0iVArMC66wA3O4YM2F8Yql_1g=s64-rw',
+                }
+            ],
+            messengers: [
+                {
+                    id: 'telegram',
+                    name: 'Telegram',
+                    package: 'org.telegram.messenger',
+                    scheme: 'tg',
+                    path: '',
+                    fallbackUrl: 'https://web.telegram.org',
+                    icon: 'https://play-lh.googleusercontent.com/ZU9cSsyIJZo6Oy7HTHiEPwZg0m2Crep-d5ZrfajqtsH-qgUXSqKpNA2FpPDTn-7qA5Q=s64-rw',
+                },
+                {
+                    id: 'whatsapp',
+                    name: 'WhatsApp',
+                    package: 'com.whatsapp',
+                    scheme: 'whatsapp',
+                    path: '',
+                    fallbackUrl: 'https://web.whatsapp.com',
+                    icon: 'https://play-lh.googleusercontent.com/bYtqbOcTYOlgc6gqZ2rwb8lptHuwlNE75zYJu6Bn076-hTmvd96HH-6v7S0YUAAJXoJN=s64-rw',
+                },
+                {
+                    id: 'wechat',
+                    name: 'WeChat',
+                    package: 'com.tencent.mm',
+                    scheme: 'weixin',
+                    path: '',
+                    fallbackUrl: 'https://web.wechat.com',
+                    icon: 'https://play-lh.googleusercontent.com/QbSSiRcodmWx6HlezOtNu3vmZeuFqkQZQQO5Y2-Zg_jBRm-mXjhlXX5yFj8iphfqzQ=s64-rw',
+                },
+                {
+                    id: 'instagram',
+                    name: 'Instagram',
+                    package: 'com.instagram.android',
+                    scheme: 'instagram',
+                    path: '',
+                    fallbackUrl: 'https://www.instagram.com',
+                    icon: 'https://play-lh.googleusercontent.com/VRMWkE5p3CkWhJs6nv-9ZsLAs1QOg5ob1_3qg-rckwYW7yp1fMrYZqnEFpk0IoVP4LM=s64-rw',
+                },
+                {
+                    id: 'facebook',
+                    name: 'Facebook',
+                    package: 'com.facebook.katana',
+                    scheme: 'fb',
+                    path: '',
+                    fallbackUrl: 'https://fb.com',
+                    icon: 'https://play-lh.googleusercontent.com/KCMTYuiTrKom4Vyf0G4foetVOwhKWzNbHWumV73IXexAIy5TTgZipL52WTt8ICL-oIo=s64-rw',
+                },
+                {
+                    id: 'vk',
+                    name: 'VK',
+                    package: 'com.vkontakte.android',
+                    scheme: 'vk',
+                    path: '',
+                    fallbackUrl: 'https://vk.com',
+                    icon: 'https://play-lh.googleusercontent.com/GntsGclzheXXASOhjSF1lCOPOznM_OARDObiTW_NQZtpYVwPQr_0ARyRyiXB0_OocmI=s64-rw',
+                }
+            ]
+        };
+
+        // Ключи для localStorage
+        const STORAGE_KEY = 'visible_services';
+        const STORAGE_ORDER_KEY = 'services_order';
+
+        // Загрузка видимости сервисов из localStorage
+        const loadVisibility = () => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return {};
+            try {
+                return JSON.parse(saved);
+            } catch (error) {
+                console.error("Error parsing visibility data", error);
+                return {};
+            }
+        };
+
+        // Сохранение состояния видимости в localStorage
+        const saveVisibility = (state) => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        };
+
+        // Загрузка порядка сервисов из localStorage
+        const loadOrder = () => {
+            const saved = localStorage.getItem(STORAGE_ORDER_KEY);
+            if (!saved) return [];
+            try {
+                return JSON.parse(saved);
+            } catch (error) {
+                console.error("Error parsing order data", error);
+                return [];
+            }
+        };
+
+        // Сохранение порядка сервисов в localStorage
+        const saveOrder = (order) => {
+            localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(order));
+        };
+
+        // Проверка видимости приложения
+        const isAppVisible = (app, visibility) =>
+            app.id in visibility ? visibility[app.id] : Boolean(app.showOnLaunch);
+
+        // Сортировка приложений по сохраненному порядку
+        const sortApps = (apps) => {
+            const order = loadOrder();
+            return apps.slice().sort((a, b) => {
+                const idxA = order.indexOf(a.id);
+                const idxB = order.indexOf(b.id);
+                if (idxA === -1 && idxB === -1) return 0;
+                if (idxA === -1) return 1;
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+            });
+        };
+
+        // Переключение панели настроек
+        const toggleSettings = () => {
+            const panel = document.getElementById("settingsPanel");
+            const overlay = document.getElementById("settingsOverlay");
+            const isOpen = panel.classList.contains("open");
+            panel.classList.toggle("open");
+            overlay.classList.toggle("active", !isOpen);
+        };
+
+        // Закрытие панели настроек
+        const closeSettings = () => {
+            document.getElementById("settingsPanel").classList.remove("open");
+            document.getElementById("settingsOverlay").classList.remove("active");
+        };
+
+        // Обработчик клика по оверлею
+        document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
+
+        // Открытие deep link с fallback
+        const tryOpenDeeplink = (scheme, path, packageName, fallbackUrl, login, event) => {
+            // Добавляем класс active при нажатии
+            const button = event.currentTarget;
+            button.classList.add('active');
+            
+            // Убираем класс active через 200ms
+            setTimeout(() => {
+                button.classList.remove('active');
+            }, 200);
+
+            const timeout = 1500;
+            let didBlur = false;
+
+            const onBlur = () => {
+                didBlur = true;
+                window.removeEventListener("blur", onBlur);
+            };
+
+            window.addEventListener("blur", onBlur);
+
+            // Формируем путь с учетом логина, если он есть
+            let fullPath = path;
+            if (login && path.includes('${login}')) {
+                fullPath = path.replace('${login}', login);
+            }
+
+            // Создаем скрытую ссылку для deep link
+            const link = document.createElement("a");
+            link.href = scheme ? `${scheme}://${fullPath}` : `https://play.google.com/store/apps/details?id=${packageName}`;
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+
+            setTimeout(() => {
+                window.removeEventListener("blur", onBlur);
+                if (!didBlur) {
+                    const action = "android.intent.action.VIEW";
+                    const fallback = `S.browser_fallback_url=${encodeURIComponent(fallbackUrl)}`;
+                    window.location.href = `intent://#Intent;action=${action};scheme=${scheme};package=${packageName};${fallback};end`;
+                }
+            }, timeout);
+        };
+
+        // Рендер кнопки приложения
+        const renderApp = (app) => `
+            <a class="app-button" onclick="tryOpenDeeplink('${app.scheme}', '${app.path}', '${app.package}', '${app.fallbackUrl}', '${app.login || ''}', event)" data-id="${app.id}">
+                <img src="${app.icon}" alt="${app.name}" class="app-icon" />
+                ${app.name}
+            </a>
+        `;
+
+        // Рендер док-панели с приложениями
+        const renderDock = () => {
+            const visibility = loadVisibility();
+            const container = document.getElementById("dock");
+            container.innerHTML = "";
+
+            let allApps = Object.values(SERVICES).flat();
+            let visibleApps = allApps.filter((app) => isAppVisible(app, visibility));
+            visibleApps = sortApps(visibleApps);
+            
+            if (visibleApps.length === 0) return;
+
+            const appsHTML = visibleApps.map(renderApp).join("");
+            container.innerHTML = `<div class="container">${appsHTML}</div>`;
+        };
+
+        // Рендер панели настроек
+        const renderSettings = () => {
+            const visibility = loadVisibility();
+            const panel = document.getElementById("settingsPanel");
+            panel.innerHTML = "";
+
+            let allApps = Object.values(SERVICES).flat();
+            allApps = sortApps(allApps);
+            const order = loadOrder();
+
+            allApps.forEach((app, index) => {
+                if (order.indexOf(app.id) === -1) order.push(app.id);
+
+                const upDisabled = index === 0 ? "disabled" : "";
+                const downDisabled = index === allApps.length - 1 ? "disabled" : "";
+
+                panel.innerHTML += `
+                    <div class="setting-item" data-id="${app.id}">
+                        <label>
+                            <input type="checkbox" data-id="${app.id}" ${isAppVisible(app, visibility) ? "checked" : ""} onchange="onToggleService(this)">
+                            ${app.name}
+                        </label>
+                        <div class="order-controls">
+                            <button ${upDisabled} onclick="moveService('${app.id}', 'up')">↑</button>
+                            <button ${downDisabled} onclick="moveService('${app.id}', 'down')">↓</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            saveOrder(order);
+        };
+
+        // Обработчик переключения видимости сервиса
+        const onToggleService = (input) => {
+            const visibility = loadVisibility();
+            visibility[input.dataset.id] = input.checked;
+            saveVisibility(visibility);
+            renderDock();
+        };
+
+        // Изменение порядка сервисов
+        const moveService = (id, direction) => {
+            let order = loadOrder();
+            const index = order.indexOf(id);
+            if (index === -1) return;
+
+            if (direction === "up" && index > 0) {
+                [order[index - 1], order[index]] = [order[index], order[index - 1]];
+            } else if (direction === "down" && index < order.length - 1) {
+                [order[index], order[index + 1]] = [order[index + 1], order[index]];
+            }
+            saveOrder(order);
+            renderSettings();
+            renderDock();
+        };
+
+        // Обновление времени и даты
+        const updateTime = () => {
+            const now = new Date();
+            const timeElement = document.getElementById("time");
+            const dateElement = document.getElementById("date");
+            
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            timeElement.textContent = `${hours}:${minutes}`;
+            
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            dateElement.textContent = now.toLocaleDateString(undefined, options);
+        };
+
+        // Инициализация интерфейса
+        const initializeInterface = () => {
+            updateTime();
+            setInterval(updateTime, 1000);
+            renderDock();
+            renderSettings();
+        };
+
+        // Экспорт функций в глобальную область видимости
+        window.toggleSettings = toggleSettings;
+        window.tryOpenDeeplink = tryOpenDeeplink;
+        window.onToggleService = onToggleService;
+        window.moveService = moveService;
+
+        // Запуск инициализации
+        initializeInterface();
+    </script>
+</body>
+</html>
